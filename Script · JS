@@ -1,0 +1,154 @@
+// ===== DOM ELEMENTS =====
+const input   = document.getElementById('msg-input');
+const sendBtn = document.getElementById('send-btn');
+const conv    = document.getElementById('conversation');
+const welcome = document.getElementById('welcome-screen');
+
+// ===== STATE =====
+let isTyping = false;
+let replyIdx = 0;
+
+// ===== AI SAMPLE REPLIES =====
+const aiReplies = [
+  "Bilkul! Main aapki baat samajh gaya. Yeh ek bohat accha sawal hai. Main step-by-step explain karta hoon...\n\nPehle, aapko ye samajhna hoga ke programming mein har concept ka ek logical base hota hai. Jab hum <code>loop</code> likhte hain, to asal mein hum computer ko baar baar kuch karne ka hukum dete hain.",
+  "Shukriya is sawal ke liye! Main abhi aapko is ke baray mein poori tarah bata deta hoon.\n\nYeh concept coding mein bohat zaroori hai. Jab aap <code>function()</code> banate hain, to aap ek reusable block of code tiyar karte hain.",
+  "Bahut badhiya sawal! Yeh topic mein bahut logon ko confusion hoti hai, lekin dar ki koi baat nahi. Main ise asaan alfaz mein samjhata hoon:\n\n1. Pehla qadam: Basic concepts samjhein\n2. Doosra qadam: Practice karein\n3. Treesra qadam: Projects banayein",
+  "Main samajh gaya aap kya pooch rahe hain! Is maslay ka hal yeh hai:\n\nSabse pehle, apna code editor kholein. Phir ek naya file banayein aur shuru karein. Har line ke baad <code>save</code> karna mat bhoolein!",
+];
+
+// ===== HELPER: Current Time =====
+function now() {
+  return new Date().toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ===== AUTO RESIZE TEXTAREA =====
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+  sendBtn.classList.toggle('active', input.value.trim().length > 0);
+});
+
+// ===== SEND ON ENTER (Shift+Enter = newline) =====
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// ===== SEND BUTTON CLICK =====
+sendBtn.addEventListener('click', sendMessage);
+
+// ===== FILL INPUT FROM SUGGESTION CARD =====
+function fillInput(text) {
+  input.value = text;
+  input.style.height = 'auto';
+  input.style.height = input.scrollHeight + 'px';
+  sendBtn.classList.add('active');
+  input.focus();
+}
+
+// ===== SEND MESSAGE =====
+function sendMessage() {
+  const text = input.value.trim();
+  if (!text || isTyping) return;
+
+  // Welcome screen hide karo, conversation dikhao
+  welcome.style.display = 'none';
+  conv.style.display = 'flex';
+
+  addBubble('user', text, 'U');
+
+  input.value = '';
+  input.style.height = 'auto';
+  sendBtn.classList.remove('active');
+  isTyping = true;
+
+  // Typing indicator dikhao
+  const typingEl = addTyping();
+
+  // AI reply delay ke saath
+  const delay = 1400 + Math.random() * 800;
+  setTimeout(() => {
+    typingEl.remove();
+    const reply = aiReplies[replyIdx % aiReplies.length];
+    replyIdx++;
+    addBubble('ai', reply, '🤖');
+    isTyping = false;
+  }, delay);
+}
+
+// ===== ADD MESSAGE BUBBLE =====
+function addBubble(type, text, avatarText) {
+  const msg = document.createElement('div');
+  msg.className = `message ${type === 'user' ? 'user' : ''}`;
+
+  // Avatar
+  const av = document.createElement('div');
+  av.className = `avatar ${type === 'ai' ? 'ai' : 'user-av'}`;
+  av.textContent = avatarText;
+
+  // Bubble container
+  const container = document.createElement('div');
+
+  // Bubble
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${type}`;
+  bubble.innerHTML = text.replace(/\n/g, '<br>');
+
+  // Time
+  const time = document.createElement('div');
+  time.className = 'msg-time';
+  time.style.textAlign = type === 'user' ? 'right' : 'left';
+  time.textContent = now();
+
+  container.appendChild(bubble);
+  container.appendChild(time);
+
+  if (type === 'ai') {
+    msg.appendChild(av);
+    msg.appendChild(container);
+  } else {
+    msg.appendChild(container);
+    msg.appendChild(av);
+  }
+
+  conv.appendChild(msg);
+  scrollBottom();
+}
+
+// ===== TYPING INDICATOR =====
+function addTyping() {
+  const msg = document.createElement('div');
+  msg.className = 'message';
+
+  const av = document.createElement('div');
+  av.className = 'avatar ai';
+  av.textContent = '🤖';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ai';
+
+  const indicator = document.createElement('div');
+  indicator.className = 'typing-indicator';
+
+  for (let i = 0; i < 3; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'typing-dot';
+    indicator.appendChild(dot);
+  }
+
+  bubble.appendChild(indicator);
+  msg.appendChild(av);
+  msg.appendChild(bubble);
+  conv.appendChild(msg);
+  scrollBottom();
+
+  return msg;
+}
+
+// ===== SCROLL TO BOTTOM =====
+function scrollBottom() {
+  const wrap = document.getElementById('messages-wrap');
+  setTimeout(() => wrap.scrollTop = wrap.scrollHeight, 50);
+}
